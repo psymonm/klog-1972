@@ -1,0 +1,50 @@
+---
+# layout for "book" display template
+# page-flipping reader using the Internet Archive's BookReader (https://github.com/internetarchive/bookreader)
+# pages are the child records of this item, in metadata order
+layout: item/item-page-base
+---
+{% assign children = site.data[site.metadata] | where_exp: 'item','item.parentid == page.objectid' %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@internetarchive/bookreader@5.0.0-87/BookReader/BookReader.css">
+<style>
+  #BookReader { height: 85vh; min-height: 520px; margin-bottom: 1.5rem; background: #1f1f1f; }
+</style>
+
+<div id="BookReader" aria-label="{{ page.title | escape }} page viewer"></div>
+
+<noscript>
+  <div class="text-center">
+    {% for child in children %}
+    <img src="{{ child.image_small | relative_url }}" alt="{{ child.image_alt_text | default: child.title | escape }}" class="img-fluid mb-3">
+    {% endfor %}
+  </div>
+</noscript>
+
+<div class="text-center my-2">
+  {% include item/child/compound-item-download-buttons.html %}
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@internetarchive/bookreader@5.0.0-87/BookReader/webcomponents-bundle.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@internetarchive/bookreader@5.0.0-87/BookReader/jquery-3.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@internetarchive/bookreader@5.0.0-87/BookReader/BookReader.js"></script>
+<script>
+(function () {
+  // page width/height set the shape BookReader lays out; the scanned pages are about 1 : 1.29
+  var pages = [
+    {% for child in children %}{ uri: {{ child.object_location | default: child.image_small | jsonify }}, width: 2000, height: 2588, pageNum: {{ forloop.index | jsonify }} }{% unless forloop.last %},{% endunless %}
+    {% endfor %}
+  ];
+  // first page (cover) sits alone, then pages are paired into two-page spreads
+  var data = [[pages[0]]];
+  for (var i = 1; i < pages.length; i += 2) { data.push(pages.slice(i, i + 2)); }
+  var br = new BookReader({
+    el: '#BookReader',
+    data: data,
+    bookTitle: {{ page.title | jsonify }},
+    ui: 'full',
+    defaults: 'mode/2up',
+    imagesBaseURL: 'https://cdn.jsdelivr.net/npm/@internetarchive/bookreader@5.0.0-87/BookReader/images/'
+  });
+  br.init();
+})();
+</script>
