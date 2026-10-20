@@ -1,0 +1,51 @@
+---
+# Reader-only page for embedding (Google Sites, iframes): just the page-flipping book, no site banner or menus.
+# Pages come from _data/klog1972.csv rows whose parentid is klog1972.
+layout: null
+permalink: /reader/klog1972.html
+book_id: klog1972
+---
+{%- assign book = site.data[site.metadata] | where: 'objectid', page.book_id | first -%}
+{%- assign children = site.data[site.metadata] | where: 'parentid', page.book_id -%}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ book.title | escape }}</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@internetarchive/bookreader@5.0.0-87/BookReader/BookReader.css">
+  <style>
+    html, body { margin: 0; height: 100%; background: #1f1f1f; }
+    #BookReader { position: absolute; inset: 0; }
+  </style>
+</head>
+<body>
+  <div id="BookReader" aria-label="{{ book.title | escape }} page viewer"></div>
+  <noscript>
+    {% for child in children %}<img src="{{ child.image_small }}" alt="{{ child.image_alt_text | default: child.title | escape }}" style="max-width:100%;display:block;margin:0 auto 12px">{% endfor %}
+  </noscript>
+  <script src="https://cdn.jsdelivr.net/npm/@internetarchive/bookreader@5.0.0-87/BookReader/webcomponents-bundle.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@internetarchive/bookreader@5.0.0-87/BookReader/jquery-3.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@internetarchive/bookreader@5.0.0-87/BookReader/BookReader.js"></script>
+  <script>
+  (function () {
+    var pages = [
+      {% for child in children %}{ uri: {{ child.object_location | default: child.image_small | jsonify }}, width: 2000, height: 2588, pageNum: {{ forloop.index | jsonify }} }{% unless forloop.last %},{% endunless %}
+      {% endfor %}
+    ];
+    var data = [[pages[0]]];
+    for (var i = 1; i < pages.length; i += 2) { data.push(pages.slice(i, i + 2)); }
+    var br = new BookReader({
+      el: '#BookReader',
+      data: data,
+      bookTitle: {{ book.title | jsonify }},
+      bookUrl: {{ '/items/' | append: page.book_id | append: '.html' | absolute_url | jsonify }},
+      ui: 'full',
+      defaults: 'mode/2up',
+      imagesBaseURL: 'https://cdn.jsdelivr.net/npm/@internetarchive/bookreader@5.0.0-87/BookReader/images/'
+    });
+    br.init();
+  })();
+  </script>
+</body>
+</html>
